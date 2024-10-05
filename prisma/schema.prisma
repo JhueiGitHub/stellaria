@@ -1,0 +1,161 @@
+// This file is named schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  imageUrl  String?
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  folders       Folder[]
+  files         File[]
+  designSystems DesignSystem[]
+  flows         Flow[]
+  windows       Window[]
+  dockItems     DockItem[]
+
+  @@index([userId])
+}
+
+model Folder {
+  id         String   @id @default(cuid())
+  name       String
+  path       String
+  isRoot     Boolean  @default(false)
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  parentId  String?
+  children  Folder[] @relation("FolderToFolder")
+  files     File[]
+
+  @@index([profileId])
+  @@index([parentId])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  mimeType  String
+  size      Int
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+  folder    Folder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folderId  String
+
+  @@index([profileId])
+  @@index([folderId])
+}
+
+model DesignSystem {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile          Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId        String
+  colorTokens      ColorToken[]
+  typographyTokens TypographyToken[]
+  flows            Flow[]
+
+  @@index([profileId])
+}
+
+model ColorToken {
+  id        String   @id @default(cuid())
+  name      String
+  value     String
+  opacity   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  designSystem   DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  designSystemId String
+
+  @@index([designSystemId])
+}
+
+model TypographyToken {
+  id            String   @id @default(cuid())
+  name          String
+  fontFamily    String
+  fontSize      String?
+  fontWeight    String?
+  lineHeight    String?
+  letterSpacing String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  designSystem   DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  designSystemId String
+
+  @@index([designSystemId])
+}
+
+model Flow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  profile        Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId      String
+  designSystem   DesignSystem @relation(fields: [designSystemId], references: [id])
+  designSystemId String
+
+  @@index([profileId])
+  @@index([designSystemId])
+}
+
+model Window {
+  id          String   @id @default(cuid())
+  title       String
+  position    Json
+  size        Json
+  zIndex      Int
+  isMinimized Boolean  @default(false)
+  isMaximized Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+
+  @@index([profileId])
+}
+
+model DockItem {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+
+  @@index([profileId])
+}
